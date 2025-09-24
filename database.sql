@@ -12,3 +12,15 @@ create table users(
 )engine = InnoDB;
 select * from users;
 describe users;
+
+create table contacts(
+    id varchar(100) not null,
+    username varchar(100) not null,
+    first_name varchar(100) not null,
+    last_name varchar(100),
+    phone varchar(100),
+    email varchar(100),
+    primary key (id),
+    foreign key fk_users_contacts (username)references users (username)
+)engine = InnoDB;
+describe contacts;
