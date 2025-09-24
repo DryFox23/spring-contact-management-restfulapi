@@ -24,3 +24,16 @@ create table contacts(
     foreign key fk_users_contacts (username)references users (username)
 )engine = InnoDB;
 describe contacts;
+
+create table addresses(
+    id varchar(100) not null,
+    contact_id varchar(100) not null,
+    street varchar(200),
+    city varchar(100),
+    province varchar(100),
+    country varchar(100) not null,
+    postal_code varchar(20),
+    primary key (id),
+    foreign key fk_contacts_addresses (contact_id) references contacts (id)
+)engine = InnoDB;
+describe addresses;
