@@ -3,17 +3,20 @@ package contact.management.restfulapi.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "users")
-public class user {
+public class User {
     @Id
     private String username;
     private String password;
@@ -22,4 +25,7 @@ public class user {
 
     @Column(name = "token_expired_at")
     private Long tokenExpiredAt;
+
+    @OneToMany(mappedBy = "user")
+    private List<Contact> contacts;
 }
