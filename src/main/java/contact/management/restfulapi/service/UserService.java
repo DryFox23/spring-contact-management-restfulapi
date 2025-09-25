@@ -23,13 +23,14 @@ public class UserService {
 
     @Autowired
     private Validator validator;
+
+    @Autowired
+    private ValidationService validationService;
+
     @Transactional
     public void register(RegisterUserRequest request) {
-        Set<ConstraintViolation<RegisterUserRequest>> violations = validator.validate(request);
-        if(violations.size() != 0){
-            //error
-            throw new ConstraintViolationException(violations);
-        }
+
+        validationService.validate(request);
 
         //check if username already registered
         if(userRepository.existsById(request.getUsername())){
