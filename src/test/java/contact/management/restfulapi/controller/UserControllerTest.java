@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import contact.management.restfulapi.entity.User;
 import contact.management.restfulapi.model.RegisterUserRequest;
+import contact.management.restfulapi.model.UserResponse;
 import contact.management.restfulapi.model.WebResponse;
 import contact.management.restfulapi.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,8 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -103,4 +103,82 @@ public class UserControllerTest {
                     assertNotNull((response.getError()));
                 });
     }
+
+    @Test
+    void getUserUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/users/current")
+                .accept(MediaType.APPLICATION_JSON)
+                .header("X-API-TOKEN", "invalid-token")
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response =  objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<WebResponse<String>>() {
+            });
+
+            assertNotNull((response.getError()));
+        });
+    }
+
+    @Test
+    void getUserUnauthorizedNotFound() throws Exception {
+        mockMvc.perform(get("/api/users/current")
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response =  objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<WebResponse<String>>() {
+            });
+
+            assertNotNull((response.getError()));
+        });
+    }
+
+    @Test
+    void getUserSucces() throws Exception {
+        User user = new User();
+        user.setName("Test User");
+        user.setUsername("test");
+        user.setToken("test");
+        user.setPassword(BCrypt.hashpw("password", BCrypt.gensalt()));
+        user.setTokenExpiredAt(System.currentTimeMillis() + 10000000L);
+        userRepository.save(user);
+
+        mockMvc.perform(get("/api/users/current")
+                .accept(MediaType.APPLICATION_JSON)
+                .header("X-API-TOKEN", "test")
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response =  objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<WebResponse<UserResponse>>() {
+            });
+
+            assertNull(response.getError());
+            assertEquals("test", response.getData().getUsername());
+            assertEquals("Test User", response.getData().getName());
+        });
+    }
+
+    @Test
+    void getUserFiledTokenExpired() throws Exception {
+        User user = new User();
+        user.setName("Test User");
+        user.setUsername("test");
+        user.setToken("test");
+        user.setPassword(BCrypt.hashpw("password", BCrypt.gensalt()));
+        user.setTokenExpiredAt(System.currentTimeMillis() - 10000000L);
+        userRepository.save(user);
+
+        mockMvc.perform(get("/api/users/current")
+                .accept(MediaType.APPLICATION_JSON)
+                .header("X-API-TOKEN", "test")
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response =  objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<WebResponse<UserResponse>>() {
+            });
+
+            assertNotNull(response.getError());
+        });
+    }
+
 }
