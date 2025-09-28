@@ -39,6 +39,7 @@ public class AuthService {
                     .expiredAt(user.getTokenExpiredAt())
                     .build();
         }else {
+            //login failed
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username or Password Wrong");
         }
     }
