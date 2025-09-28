@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import contact.management.restfulapi.entity.User;
 import contact.management.restfulapi.model.RegisterUserRequest;
+import contact.management.restfulapi.model.UpdateUserRequest;
 import contact.management.restfulapi.model.UserResponse;
 import contact.management.restfulapi.model.WebResponse;
 import contact.management.restfulapi.repository.UserRepository;
@@ -181,4 +182,57 @@ public class UserControllerTest {
         });
     }
 
+    // update user test
+    @Test
+    void updateUserUnauthorized() throws Exception {
+        UpdateUserRequest request = new UpdateUserRequest();
+
+        mockMvc.perform(patch("/api/users/current")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        ).andExpectAll(
+                status().isUnauthorized()
+        ).andDo(result -> {
+            WebResponse<String> response =  objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<WebResponse<String>>() {
+            });
+
+            assertNotNull((response.getError()));
+        });
+    }
+
+    @Test
+    void updateUserSuccess() throws Exception {
+        User user = new User();
+        user.setUsername("test");
+        user.setPassword(BCrypt.hashpw("test", BCrypt.gensalt()));
+        user.setName("Test User");
+        user.setToken("test");
+        user.setTokenExpiredAt(System.currentTimeMillis() + 10000000L);
+        userRepository.save(user);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setName("Test User Updated");
+        request.setPassword("newPw");
+
+        mockMvc.perform(patch("/api/users/current")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .header("X-API-TOKEN", "test")
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<UserResponse> response =  objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+            assertNull((response.getError()));
+            assertEquals("Test User Updated", response.getData().getName());
+            assertEquals("test", response.getData().getUsername());
+
+            User userDb = userRepository.findById("test").orElse(null);
+            assertNotNull(userDb);
+            assertTrue(BCrypt.checkpw("newPw", userDb.getPassword()));
+        });
+    }
 }
