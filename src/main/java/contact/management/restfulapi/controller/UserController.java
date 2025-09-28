@@ -2,6 +2,7 @@ package contact.management.restfulapi.controller;
 
 import contact.management.restfulapi.entity.User;
 import contact.management.restfulapi.model.RegisterUserRequest;
+import contact.management.restfulapi.model.UpdateUserRequest;
 import contact.management.restfulapi.model.UserResponse;
 import contact.management.restfulapi.model.WebResponse;
 import contact.management.restfulapi.service.UserService;
@@ -29,6 +30,17 @@ public class UserController {
         UserResponse userResponse = userService.get(user);
         return WebResponse.<UserResponse>builder()
                 .data(userResponse)
+                .build();
+    }
+
+    // update user controller
+    @PatchMapping(path = "/api/users/current",
+    consumes = MediaType.APPLICATION_JSON_VALUE,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<UserResponse> update(User user, @RequestBody UpdateUserRequest request){
+        UserResponse response = userService.update(user, request);
+        return WebResponse.<UserResponse>builder()
+                .data(response)
                 .build();
     }
 
