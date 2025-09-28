@@ -2,6 +2,7 @@ package contact.management.restfulapi.service;
 
 import contact.management.restfulapi.entity.User;
 import contact.management.restfulapi.model.RegisterUserRequest;
+import contact.management.restfulapi.model.UpdateUserRequest;
 import contact.management.restfulapi.model.UserResponse;
 import contact.management.restfulapi.repository.UserRepository;
 import jakarta.validation.ConstraintViolation;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -52,6 +54,24 @@ public class UserService {
                 .name(user.getName())
                 .build();
         }
+
+        // update user service
+        @Transactional
+        public UserResponse update(User user, UpdateUserRequest request) {
+        validationService.validate(request);
+
+        // Pengecekan jika data ada yang diubah
+        if (Objects.nonNull(request.getName())){
+            user.setName(request.getName());
+        }
+
+        if (Objects.nonNull(request.getPassword())){
+            user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+        }
+
+        return UserResponse.builder()
+                .name(user.getName())
+                .username(user.getUsername())
+                .build();
+        }
     }
-
-
