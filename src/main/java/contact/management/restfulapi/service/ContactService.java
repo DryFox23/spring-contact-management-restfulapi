@@ -4,6 +4,7 @@ import contact.management.restfulapi.entity.Contact;
 import contact.management.restfulapi.entity.User;
 import contact.management.restfulapi.model.ContactResponse;
 import contact.management.restfulapi.model.CreateContactRequest;
+import contact.management.restfulapi.model.UpdateContactRequest;
 import contact.management.restfulapi.repository.ContactRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,7 @@ public class ContactService {
     @Autowired
     private ContactRepository contactRepository;
 
-    // contact service
+    // service create contact
     @Transactional
     public ContactResponse create(User user, CreateContactRequest request) {
         validationService.validate(request);
@@ -56,6 +57,23 @@ public class ContactService {
     public ContactResponse get(User user, String id){
         Contact contact = contactRepository.findFirstByUserAndId(user, id)
                 .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found"));
+        return toContactResponse(contact);
+    }
+
+    // Service Update contact
+    @Transactional
+    public ContactResponse update(User user, UpdateContactRequest request){
+        validationService.validate(request);
+        Contact contact = contactRepository.findFirstByUserAndId(user, request.getId())
+                .orElseThrow(()->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found"));
+
+        contact.setFirstName(request.getFirstName());
+        contact.setLastName(request.getLastName());
+        contact.setEmail(request.getEmail());
+        contact.setPhone(request.getPhone());
+        contactRepository.save(contact);
+
         return toContactResponse(contact);
     }
 }
