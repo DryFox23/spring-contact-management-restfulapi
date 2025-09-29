@@ -8,9 +8,7 @@ import contact.management.restfulapi.service.ContactService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.http.codec.ServerSentEvent.builder;
 
@@ -26,6 +24,16 @@ public class ContactController {
     produces = MediaType.APPLICATION_JSON_VALUE)
     public WebResponse<ContactResponse> create(User user, @RequestBody CreateContactRequest request){
         ContactResponse contactResponse = contactService.create(user, request);
+        return WebResponse.<ContactResponse>builder()
+                .data(contactResponse)
+                .build();
+    }
+
+    // get contact by id controller
+    @GetMapping(path = "/api/contacts/{contactId}",
+    consumes = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<ContactResponse> get(User user,@PathVariable("contactId")String id) {
+        ContactResponse contactResponse = contactService.get(user,id);
         return WebResponse.<ContactResponse>builder()
                 .data(contactResponse)
                 .build();
