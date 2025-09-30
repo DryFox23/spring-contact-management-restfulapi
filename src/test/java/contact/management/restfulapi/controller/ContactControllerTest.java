@@ -219,4 +219,50 @@ public class ContactControllerTest {
                     assertEquals(request.getPhone(), response.getData().getPhone());
                 });
     }
+    
+    // delete contact test case
+
+    @Test
+    void deleteContact404() throws Exception {
+        mockMvc.perform(delete("/api/contacts/1231")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-API-TOKEN", "test token"))
+                .andExpectAll(status().isNotFound())
+                .andDo(result -> {
+                    WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<WebResponse<String>>() {
+                            });
+                    assertNotNull(response.getError());
+                });
+    }
+
+    @Test
+    void deleteContact200() throws Exception {
+        User user = userRepository.findById("test username").orElseThrow();
+
+        Contact contact = new Contact();
+        contact.setId(UUID.randomUUID().toString());
+        contact.setUser(user);
+        contact.setFirstName("Test First Name");
+        contact.setLastName("Test Last Name");
+        contact.setEmail("test@example.com");
+        contact.setPhone("1234567890");
+        contactRepository.save(contact);
+
+        mockMvc.perform(delete("/api/contacts/" + contact.getId())
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-API-TOKEN", "test token"))
+                .andExpectAll(status().isOk())
+                .andDo(result -> {
+                    WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<WebResponse<String>>() {
+                            });
+
+                    assertNull(response.getError());
+                    assertEquals("Delete contact success", response.getData());
+                    assertFalse(contactRepository.existsById(contact.getId()));
+                });
+    }
 }
