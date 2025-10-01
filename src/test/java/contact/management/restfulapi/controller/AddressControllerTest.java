@@ -171,4 +171,51 @@ public class AddressControllerTest {
                     assertTrue(addressRepository.existsById(response.getData().getId()));
                 });
     }
+
+    @Test
+    void deleteAddressFailed() throws Exception {
+        mockMvc.perform(delete("/api/contacts/testId/addresses/123")
+                .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("X-API-TOKEN", "test token"))
+                .andExpectAll(status().isNotFound())
+                .andDo(result -> {
+                    WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<WebResponse<String>>() {
+                            });
+
+                    assertNotNull(response.getError());
+                    assertFalse(addressRepository.existsById("123"));
+                });
+    }
+
+    @Test
+    void deleteAddressSucces() throws Exception {
+        Contact contact = contactRepository.findById("testId").orElseThrow();
+
+        Address address = new Address();
+        address.setId(UUID.randomUUID().toString());
+        address.setContact(contact);
+        address.setStreet("Test Street");
+        address.setCity("Test City");
+        address.setProvince("Test Province");
+        address.setCountry("Test Country");
+        address.setPostalCode("12345");
+        addressRepository.save(address);
+
+        mockMvc.perform(delete("/api/contacts/testId/addresses/" + address.getId())
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-API-TOKEN", "test token"))
+                .andExpectAll(status().isOk())
+                .andDo(result -> {
+                    WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<WebResponse<String>>() {
+                            });
+
+                    assertNull(response.getError());
+                    assertEquals("Address successfully deleted", response.getData());
+                    assertFalse(addressRepository.existsById(address.getId()));
+                });
+    }
 }
