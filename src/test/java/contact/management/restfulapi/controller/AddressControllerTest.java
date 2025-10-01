@@ -2,6 +2,7 @@ package contact.management.restfulapi.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import contact.management.restfulapi.entity.Address;
 import contact.management.restfulapi.entity.Contact;
 import contact.management.restfulapi.entity.User;
 import contact.management.restfulapi.model.AddressResponse;
@@ -18,6 +19,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -73,10 +76,10 @@ public class AddressControllerTest {
         request.setCountry("");
 
         mockMvc.perform(post("/api/contacts/testId/addresses")
-                .accept(MediaType.APPLICATION_JSON)
-                .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
                         .header("X-API-TOKEN", "test token")
-                .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andDo(result -> {
                     WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(),
@@ -97,10 +100,10 @@ public class AddressControllerTest {
         request.setPostalCode("12345");
 
         mockMvc.perform(post("/api/contacts/testId/addresses")
-                .accept(MediaType.APPLICATION_JSON)
-                .contentType(MediaType.APPLICATION_JSON)
-        .header("X-API-TOKEN", "test token")
-                .content(objectMapper.writeValueAsString(request)))
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "test token")
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpectAll(status().isOk())
                 .andDo(result -> {
                     WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(),
@@ -113,6 +116,58 @@ public class AddressControllerTest {
                     assertEquals("Test Country", response.getData().getCountry());
                     assertEquals("12345", response.getData().getPostalCode());
                     assertNotNull(response.getData().getId());
+                    assertTrue(addressRepository.existsById(response.getData().getId()));
+                });
+    }
+
+    // Unit test for get address
+
+    @Test
+    void getAddressFailed() throws Exception {
+        mockMvc.perform(get("/api/contacts/testId/addresses/123")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "test token"))
+                .andExpectAll(status().isNotFound())
+                .andDo(result -> {
+                    WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<>() {
+                            });
+
+                    assertNotNull(response.getError());
+                });
+    }
+
+    @Test
+    void getAddressSuccess() throws Exception {
+        Contact contact = contactRepository.findById("testId").orElseThrow();
+
+        Address address = new Address();
+        address.setId(UUID.randomUUID().toString());
+        address.setContact(contact);
+        address.setStreet("Test Street");
+        address.setCity("Test City");
+        address.setProvince("Test Province");
+        address.setCountry("Test Country");
+        address.setPostalCode("12345");
+        addressRepository.save(address);
+
+        mockMvc.perform(get("/api/contacts/testId/addresses/" + address.getId())
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "test token"))
+                .andExpectAll(status().isOk())
+                .andDo(result -> {
+                    WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<WebResponse<AddressResponse>>() {
+                            });
+                    assertNull(response.getError());
+                    assertEquals(address.getId(), response.getData().getId());
+                    assertEquals(address.getStreet(), response.getData().getStreet());
+                    assertEquals(address.getCity(), response.getData().getCity());
+                    assertEquals(address.getProvince(), response.getData().getProvince());
+                    assertEquals(address.getCountry(), response.getData().getCountry());
+                    assertEquals(address.getPostalCode(), response.getData().getPostalCode());
                     assertTrue(addressRepository.existsById(response.getData().getId()));
                 });
     }
