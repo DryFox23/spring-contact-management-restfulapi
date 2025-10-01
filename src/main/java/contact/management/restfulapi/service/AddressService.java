@@ -57,4 +57,17 @@ public class AddressService {
                 .postalCode(address.getPostalCode())
                 .build();
     }
+
+    // Service for get address
+    @Transactional(readOnly = true)
+    public AddressResponse get(User user, String contactId, String addressId){
+
+        Contact contact = contactRepository.findFirstByUserAndId(user, contactId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found"));
+
+        Address address = addressRepository.findFirstByContactAndId(contact, addressId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
+
+        return toAddressResponse(address);
+    }
 }
