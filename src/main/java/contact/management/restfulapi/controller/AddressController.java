@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class AddressController {
 
@@ -66,6 +68,18 @@ public class AddressController {
 
         AddressResponse response = addressService.update(user,contactId,addressId, request);
         return WebResponse.<AddressResponse>builder()
+                .data(response)
+                .build();
+    }
+
+    // Controller for get all addresses by contact
+    @GetMapping(path = "/api/contacts/{contactId}/addresses",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<List<AddressResponse>> list(User user,
+                                                  @PathVariable("contactId") String contactId){
+
+        List<AddressResponse> response = addressService.list(user, contactId);
+        return WebResponse.<List<AddressResponse>>builder()
                 .data(response)
                 .build();
     }
