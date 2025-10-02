@@ -5,9 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import contact.management.restfulapi.entity.Address;
 import contact.management.restfulapi.entity.Contact;
 import contact.management.restfulapi.entity.User;
-import contact.management.restfulapi.model.AddressResponse;
-import contact.management.restfulapi.model.CreateAddressRequest;
-import contact.management.restfulapi.model.WebResponse;
+import contact.management.restfulapi.model.*;
 import contact.management.restfulapi.repository.AddressRepository;
 import contact.management.restfulapi.repository.ContactRepository;
 import contact.management.restfulapi.repository.UserRepository;
@@ -216,6 +214,69 @@ public class AddressControllerTest {
                     assertNull(response.getError());
                     assertEquals("Address successfully deleted", response.getData());
                     assertFalse(addressRepository.existsById(address.getId()));
+                });
+    }
+
+    // Unit test for update address
+    @Test
+    void updateAddressFailed() throws Exception {
+        UpdateAddressRequest request = new UpdateAddressRequest();
+        request.setCountry("");
+
+        mockMvc.perform(put("/api/contacts/testId/addresses/123")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "test token")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpectAll(
+                        status().isBadRequest()
+                ).andDo(result -> {
+                    WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<WebResponse<String>>() {
+                    });
+                    assertNotNull(response.getError());
+                });
+    }
+
+    @Test
+    void updateAddressSuccess() throws Exception {
+        Contact contact = contactRepository.findById("testId").orElseThrow();
+
+        Address address = new Address();
+        address.setId(UUID.randomUUID().toString());
+        address.setContact(contact);
+        address.setStreet("Test Street");
+        address.setCity("Test City");
+        address.setProvince("Test Province");
+        address.setCountry("Test Country");
+        address.setPostalCode("12345");
+        addressRepository.save(address);
+
+        UpdateAddressRequest request = new UpdateAddressRequest();
+        request.setStreet("New Street");
+        request.setCity("New City");
+        request.setProvince("New Province");
+        request.setCountry("New Country");
+        request.setPostalCode("54321");
+
+        mockMvc.perform(put("/api/contacts/testId/addresses/" + address.getId())
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-API-TOKEN", "test token")
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpectAll(status().isOk())
+                .andDo(result -> {
+                    WebResponse<AddressResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<WebResponse<AddressResponse>>() {
+                            });
+                    assertNull(response.getError());
+                    assertEquals(address.getId(), response.getData().getId());
+                    assertEquals(request.getStreet(), response.getData().getStreet());
+                    assertEquals(request.getCity(), response.getData().getCity());
+                    assertEquals(request.getProvince(), response.getData().getProvince());
+                    assertEquals(request.getCountry(), response.getData().getCountry());
+                    assertEquals(request.getPostalCode(), response.getData().getPostalCode());
+                    assertTrue(addressRepository.existsById(response.getData().getId()));
+
                 });
     }
 }
