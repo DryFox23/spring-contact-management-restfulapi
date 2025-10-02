@@ -3,6 +3,7 @@ package contact.management.restfulapi.controller;
 import contact.management.restfulapi.entity.User;
 import contact.management.restfulapi.model.AddressResponse;
 import contact.management.restfulapi.model.CreateAddressRequest;
+import contact.management.restfulapi.model.UpdateAddressRequest;
 import contact.management.restfulapi.model.WebResponse;
 import contact.management.restfulapi.service.AddressService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,23 @@ public class AddressController {
         addressService.delete(user, contactId, addressId);
         return WebResponse.<String>builder()
                 .data("Address successfully deleted")
+                .build();
+    }
+
+    // Controller for update Address
+    @PutMapping(path = "/api/contacts/{contactId}/addresses/{addressId}",
+    consumes = MediaType.APPLICATION_JSON_VALUE,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<AddressResponse> update(User user,
+                                               @RequestBody UpdateAddressRequest request,
+                                               @PathVariable("contactId") String contactId,
+                                               @PathVariable("addressId") String addressId) {
+        request.setContactId(contactId);
+        request.setAddressId(addressId);
+
+        AddressResponse response = addressService.update(user,contactId,addressId, request);
+        return WebResponse.<AddressResponse>builder()
+                .data(response)
                 .build();
     }
 }
