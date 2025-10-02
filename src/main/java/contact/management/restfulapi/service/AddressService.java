@@ -6,6 +6,7 @@ import contact.management.restfulapi.entity.User;
 import contact.management.restfulapi.model.AddressResponse;
 import contact.management.restfulapi.model.CreateAddressRequest;
 import contact.management.restfulapi.model.UpdateAddressRequest;
+import contact.management.restfulapi.model.WebResponse;
 import contact.management.restfulapi.repository.AddressRepository;
 import contact.management.restfulapi.repository.ContactRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -104,5 +107,15 @@ public class AddressService {
         addressRepository.save(address);
 
         return toAddressResponse(address);
+    }
+
+    // Service for get all addresses by contact
+    @Transactional(readOnly = true)
+    public List<AddressResponse> list(User user, String contactId){
+        Contact contact = contactRepository.findFirstByUserAndId(user, contactId).
+                orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found"));
+
+        List<Address> address = addressRepository.findAllByContact(contact);
+        return address.stream().map(this::toAddressResponse).toList();
     }
 }
