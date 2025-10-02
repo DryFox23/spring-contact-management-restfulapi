@@ -18,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -277,6 +278,62 @@ public class AddressControllerTest {
                     assertEquals(request.getPostalCode(), response.getData().getPostalCode());
                     assertTrue(addressRepository.existsById(response.getData().getId()));
 
+                });
+    }
+
+    // Unit test for get all addresses by contact
+    @Test
+    void getListAddressFailed() throws Exception {
+        mockMvc.perform(get("/api/contacts/salah/addresses")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-API-TOKEN", "test token"))
+                .andExpectAll(status().isNotFound())
+                .andDo(result -> {
+                    WebResponse<String> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<>() {
+                            });
+
+                    assertNotNull(response.getError());
+                });
+    }
+
+    @Test
+    void getListAddressSuccess() throws Exception {
+        Contact contact = contactRepository.findById("testId").orElseThrow();
+
+        for (int i = 0; i < 10; i++) {
+            Address address = new Address();
+            address.setId(UUID.randomUUID().toString());
+            address.setContact(contact);
+            address.setStreet("Test Street " + i);
+            address.setCity("Test City " + i);
+            address.setProvince("Test Province " + i);
+            address.setCountry("Test Country " + i);
+            address.setPostalCode("12345" + i);
+            addressRepository.save(address);
+        }
+
+        mockMvc.perform(get("/api/contacts/testId/addresses")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-API-TOKEN", "test token"))
+                .andExpectAll(status().isOk())
+                .andDo(result -> {
+                    WebResponse<List<AddressResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                            new TypeReference<WebResponse<List<AddressResponse>>>() {
+                            });
+                    assertNull(response.getError());
+                    assertEquals(10, response.getData().size());
+                    List<Address> addresses = addressRepository.findAllByContact(contact);
+                    for (int i = 0; i < 10; i++) {
+                        assertEquals(addresses.get(i).getId(), response.getData().get(i).getId());
+                        assertEquals(addresses.get(i).getStreet(), response.getData().get(i).getStreet());
+                        assertEquals(addresses.get(i).getCity(), response.getData().get(i).getCity());
+                        assertEquals(addresses.get(i).getProvince(), response.getData().get(i).getProvince());
+                        assertEquals(addresses.get(i).getCountry(), response.getData().get(i).getCountry());
+                        assertEquals(addresses.get(i).getPostalCode(), response.getData().get(i).getPostalCode());
+                    }
                 });
     }
 }
